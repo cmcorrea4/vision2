@@ -100,7 +100,7 @@ if uploaded_file is not None and api_key and analyze_button:
                 {
                    "role": "user",
                    "content": [
-                     {"type": "text", "text": "What’s in this image?"},
+                     {"type": "text", "text": prompt_text},
                      {
                        "type": "image_url",
                        "image_url": {
