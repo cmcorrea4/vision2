@@ -109,7 +109,7 @@ if uploaded_file is not None and api_key and analyze_button:
                 ],
               max_tokens=300,
               )
-            if respoonse.choices[0].delta.content is not None:
+            if response.choices[0].delta.content is not None:
                     full_response += completion.choices[0].delta.content
                     message_placeholder.markdown(full_response + "▌")
             # Final update to placeholder after the stream ends
