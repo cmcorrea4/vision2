@@ -89,11 +89,8 @@ if uploaded_file is not None and api_key and analyze_button:
     
         # Make the request to the OpenAI API
         try:
-            # Without Stream
-            
-            # response = client.chat.completions.create(
-            #     model="gpt-4-vision-preview", messages=messages, max_tokens=500, stream=False
-            # )
+            full_response = ""
+            message_placeholder = st.empty()
             response = openai.chat.completions.create(
               model= "gpt-4o",
               messages=[
@@ -111,10 +108,15 @@ if uploaded_file is not None and api_key and analyze_button:
                   }
                 ],
               max_tokens=300,
-              )
+              ):
+                if completion.choices[0].delta.content is not None:
+                    full_response += completion.choices[0].delta.content
+                    message_placeholder.markdown(full_response + "▌")
+            # Final update to placeholder after the stream ends
+            message_placeholder.markdown(full_response)
     
             # Display the response in the app
-            st.write(response.choices[0])
+            #st.write(response.choices[0])
         except Exception as e:
             st.error(f"An error occurred: {e}")
 else:
