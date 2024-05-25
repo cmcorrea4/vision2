@@ -8,9 +8,9 @@ def encode_image(image_file):
     return base64.b64encode(image_file.getvalue()).decode("utf-8")
 
 
-st.set_page_config(page_title="Analisis dde imagen2", layout="centered", initial_sidebar_state="collapsed")
+st.set_page_config(page_title="Analisis dde imagen", layout="centered", initial_sidebar_state="collapsed")
 # Streamlit page setup
-st.title("Análisis de Imagen:🤖🏞️")
+st.title("Análisis de Imagen2:🤖🏞️")
 #st.write(openai.Model.list())
 ke = st.text_input('Ingresa tu Clave')
 #os.environ['OPENAI_API_KEY'] = st.secrets['OPENAI_API_KEY']
