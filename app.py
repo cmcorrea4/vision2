@@ -93,8 +93,8 @@ if uploaded_file is not None and api_key and analyze_button:
             # response = client.chat.completions.create(
             #     model="gpt-4-vision-preview", messages=messages, max_tokens=500, stream=False
             # )
-            response = openai.chat.completions.create
-            (model= "gpt-4o",
+            response = openai.chat.completions.create(
+              model= "gpt-4o",
               messages=[
                 {
                    "role": "user",
