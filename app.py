@@ -15,6 +15,8 @@ st.set_page_config(page_title="Analisis dde imagen", layout="centered", initial_
 st.title("Análisis de Imagen2:🤖🏞️")
 image = Image.open('OIG2.jpg')
 st.image(image, width=350)
+with st.sidebar:
+    st.subheader("Este Agente analiza el contenido de la imagen y responde tus preguntas.")
 ke = st.text_input('Ingresa tu Clave')
 #os.environ['OPENAI_API_KEY'] = st.secrets['OPENAI_API_KEY']
 os.environ['OPENAI_API_KEY'] = ke
