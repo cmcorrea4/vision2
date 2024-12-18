@@ -130,7 +130,7 @@ if image_file is not None and api_key and analyze_button:
             with st.status("Procesando...", expanded=True) as status:
                 st.write("☁️ Conectando con OpenAI...")
                 response = client.chat.completions.create(
-                    model="gpt-4-vision-preview",
+                    model="gpt-4o-mini",  #  gpt-4-vision-preview
                     messages=[
                         {
                             "role": "user",
