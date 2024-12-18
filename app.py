@@ -4,129 +4,167 @@ import base64
 from openai import OpenAI
 import openai
 from PIL import Image
+import io
+from streamlit_webrtc import webrtc_streamer
+import cv2
 
-# Function to encode the image to base64
+# Función para codificar la imagen a base64
 def encode_image(image_file):
     return base64.b64encode(image_file.getvalue()).decode("utf-8")
 
+# Función para convertir imagen CV2 a bytes
+def cv2_to_bytes(cv2_img):
+    is_success, buffer = cv2.imencode(".jpg", cv2_img)
+    if is_success:
+        return io.BytesIO(buffer)
+    return None
 
-st.set_page_config(page_title="Analisis dde imagen", layout="centered", initial_sidebar_state="collapsed")
-# Streamlit page setup
-st.title("Análisis de Imagen:🤖🏞️")
-image = Image.open('OIG4.jpg')
-st.image(image, width=350)
+# Configuración de la página
+st.set_page_config(
+    page_title="Análisis de Imagen AI",
+    layout="wide",
+    initial_sidebar_state="expanded"
+)
+
+# Estilo CSS personalizado
+st.markdown("""
+    <style>
+        .main > div {
+            padding: 2rem;
+            border-radius: 10px;
+            background-color: #f8f9fa;
+        }
+        .stTitle {
+            color: #1e88e5;
+            font-size: 2.5rem !important;
+            margin-bottom: 2rem !important;
+        }
+    </style>
+""", unsafe_allow_html=True)
+
+# Barra lateral con información
 with st.sidebar:
-    st.subheader("Este Agente analiza el contenido de la imagen y responde tus preguntas.")
-ke = st.text_input('Ingresa tu Clave')
-#os.environ['OPENAI_API_KEY'] = st.secrets['OPENAI_API_KEY']
-os.environ['OPENAI_API_KEY'] = ke
+    st.image('OIG4.jpg', width=200)
+    st.title("📸 Guía de Uso")
+    st.markdown("""
+    ### Funcionalidades:
+    1. **Carga de Imágenes** 📤
+       - Sube imágenes en formato JPG, PNG o JPEG
+       - Tamaño máximo recomendado: 5MB
+    
+    2. **Captura con Cámara** 📷
+       - Usa tu cámara web para capturar imágenes
+       - Asegúrate de tener buena iluminación
+    
+    3. **Análisis con IA** 🤖
+       - Descripción detallada del contenido
+       - Identificación de elementos clave
+       
+    4. **Contexto Adicional** ✍️
+       - Añade información relevante para mejorar el análisis
+    
+    ### Requerimientos:
+    - API Key de OpenAI
+    - Conexión a internet estable
+    """)
+    
+    # Input para la API key con diseño mejorado
+    with st.expander("⚙️ Configuración API", expanded=False):
+        ke = st.text_input('API Key de OpenAI', type="password")
 
+# Configuración de la API
+os.environ['OPENAI_API_KEY'] = ke if ke else ''
+api_key = os.environ.get('OPENAI_API_KEY', '')
 
-# Retrieve the OpenAI API Key from secrets
-api_key = os.environ['OPENAI_API_KEY']
+# Contenedor principal
+st.title("🤖 Análisis Inteligente de Imágenes")
 
-# Initialize the OpenAI client with the API key
-client = OpenAI(api_key=api_key)
+# Tabs para diferentes métodos de entrada
+tab1, tab2 = st.tabs(["📤 Subir Imagen", "📷 Usar Cámara"])
 
-# File uploader allows user to add their own image
-uploaded_file = st.file_uploader("Upload an image", type=["jpg", "png", "jpeg"])
-
-if uploaded_file:
-    # Display the uploaded image
-    with st.expander("Image", expanded = True):
-        st.image(uploaded_file, caption=uploaded_file.name, use_column_width=True)
-
-# Toggle for showing additional details input
-show_details = st.toggle("Adiciona detalles sobre la imagen", value=False)
-
-if show_details:
-    # Text input for additional details about the image, shown only if toggle is True
-    additional_details = st.text_area(
-        "Adiciona contexto de la imagen aqui:",
-        disabled=not show_details
+with tab1:
+    uploaded_file = st.file_uploader(
+        "Arrastra o selecciona una imagen",
+        type=["jpg", "png", "jpeg"],
+        help="Formatos soportados: JPG, PNG, JPEG"
     )
+    
+    if uploaded_file:
+        st.image(uploaded_file, caption="Imagen cargada", use_column_width=True)
 
-# Button to trigger the analysis
-analyze_button = st.button("Analiza la imagen", type="secondary")
+with tab2:
+    webrtc_ctx = webrtc_streamer(
+        key="camera",
+        video_processor_factory=None,
+        media_stream_constraints={"video": True, "audio": False},
+    )
+    if webrtc_ctx.video_transformer:
+        if st.button("📸 Capturar Imagen"):
+            frame = webrtc_ctx.video_transformer.frame
+            if frame is not None:
+                uploaded_file = cv2_to_bytes(frame)
+                st.image(frame, caption="Imagen capturada", use_column_width=True)
 
-# Check if an image has been uploaded, if the API key is available, and if the button has been pressed
+# Opciones adicionales
+col1, col2 = st.columns(2)
+with col1:
+    show_details = st.toggle("✍️ Añadir contexto", value=False)
+with col2:
+    if show_details:
+        additional_details = st.text_area(
+            "Describe el contexto de la imagen:",
+            placeholder="Ej: Esta imagen fue tomada durante...",
+            disabled=not show_details
+        )
+
+# Botón de análisis con estilo mejorado
+analyze_button = st.button(
+    "🔍 Analizar Imagen",
+    type="primary",
+    use_container_width=True
+)
+
+# Lógica de análisis
 if uploaded_file is not None and api_key and analyze_button:
-
-    with st.spinner("Analizando ..."):
-        # Encode the image
-        base64_image = encode_image(uploaded_file)
-    
-        # Optimized prompt for additional clarity and detail
-        #prompt_text = (
-        #    "You are a highly knowledgeable scientific image analysis expert. "
-        #   "Your task is to examine the following image in detail. "
-        #    "Provide a comprehensive, factual, and scientifically accurate explanation of what the image depicts. "
-        #    "Highlight key elements and their significance, and present your analysis in clear, well-structured markdown format. "
-        #    "If applicable, include any relevant scientific terminology to enhance the explanation. "
-        #    "Assume the reader has a basic understanding of scientific concepts."
-        #    "Create a detailed image caption in bold explaining in short."
-        #    "The data is about electrical energy consumption and demand."
-        #    "Write when occurs the major and minor consumption, date and hour when this be possible."
-        #    "Explain always in spanish."
-        #)
-
-        prompt_text = ("Describe what you see in the image in spanish")
-    
-        if show_details and additional_details:
-            prompt_text += (
-                f"\n\nAdditional Context Provided by the User:\n{additional_details}"
-            )
-    
-        # Create the payload for the completion request
-        messages = [
-            {
-                "role": "user",
-                "content": [
-                    {"type": "text", "text": prompt_text},
-                    {
-                        "type": "image_url",
-                        "image_url": f"data:image/jpeg;base64,{base64_image}",
-                    },
-                ],
-            }
-        ]
-    
-        # Make the request to the OpenAI API
+    with st.spinner("🤖 Analizando imagen..."):
         try:
-            full_response = ""
-            message_placeholder = st.empty()
-            response = openai.chat.completions.create(
-              model= "gpt-4o-mini",
-              messages=[
-                {
-                   "role": "user",
-                   "content": [
-                     {"type": "text", "text": prompt_text},
-                     {
-                       "type": "image_url",
-                       "image_url": {
-                         "url": f"data:image/jpeg;base64,{base64_image}",
-                       },
-                     },
-                   ],
-                  }
-                ],
-              max_tokens=300,
-              )
-            #response.choices[0].message.content
-            if response.choices[0].message.content is not None:
-                    full_response += response.choices[0].message.content
-                    message_placeholder.markdown(full_response + "▌")
-            # Final update to placeholder after the stream ends
-            message_placeholder.markdown(full_response)
-    
-            # Display the response in the app
-            #st.write(response.choices[0])
+            base64_image = encode_image(uploaded_file)
+            prompt_text = "Describe detalladamente lo que ves en la imagen en español. Incluye todos los elementos relevantes y su contexto."
+            
+            if show_details and additional_details:
+                prompt_text += f"\n\nContexto adicional:\n{additional_details}"
+
+            client = OpenAI(api_key=api_key)
+            
+            with st.status("Procesando...", expanded=True) as status:
+                st.write("☁️ Conectando con OpenAI...")
+                response = client.chat.completions.create(
+                    model="gpt-4-vision-preview",
+                    messages=[
+                        {
+                            "role": "user",
+                            "content": [
+                                {"type": "text", "text": prompt_text},
+                                {
+                                    "type": "image_url",
+                                    "image_url": f"data:image/jpeg;base64,{base64_image}",
+                                },
+                            ],
+                        }
+                    ],
+                    max_tokens=500,
+                )
+                status.update(label="✅ ¡Análisis completado!", state="complete")
+                
+            # Mostrar resultados
+            st.success("Análisis completado con éxito")
+            st.markdown("### 📝 Resultados del Análisis")
+            st.markdown(response.choices[0].message.content)
+            
         except Exception as e:
-            st.error(f"An error occurred: {e}")
+            st.error(f"❌ Error: {str(e)}")
 else:
-    # Warnings for user action required
     if not uploaded_file and analyze_button:
-        st.warning("Please upload an image.")
-    if not api_key:
-        st.warning("Por favor ingresa tu API key.")
+        st.warning("⚠️ Por favor, sube o captura una imagen primero.")
+    if not api_key and analyze_button:
+        st.warning("⚠️ Por favor, ingresa tu API key de OpenAI en la barra lateral.")
