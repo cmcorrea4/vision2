@@ -88,7 +88,7 @@ with tab1:
     )
     if uploaded_file:
         image_file = uploaded_file
-        #st.image(uploaded_file, caption="Imagen cargada", use_container_width=True)
+        st.image(uploaded_file, caption="Imagen cargada", use_container_width=True)
 
 with tab2:
     camera_image = st.camera_input("Toma una foto")
