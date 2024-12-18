@@ -4,20 +4,10 @@ import base64
 from openai import OpenAI
 import openai
 from PIL import Image
-import io
-from streamlit_webrtc import webrtc_streamer
-import cv2
 
 # Función para codificar la imagen a base64
 def encode_image(image_file):
     return base64.b64encode(image_file.getvalue()).decode("utf-8")
-
-# Función para convertir imagen CV2 a bytes
-def cv2_to_bytes(cv2_img):
-    is_success, buffer = cv2.imencode(".jpg", cv2_img)
-    if is_success:
-        return io.BytesIO(buffer)
-    return None
 
 # Configuración de la página
 st.set_page_config(
@@ -39,6 +29,11 @@ st.markdown("""
             font-size: 2.5rem !important;
             margin-bottom: 2rem !important;
         }
+        .upload-text {
+            font-size: 1.2rem;
+            color: #666;
+            text-align: center;
+        }
     </style>
 """, unsafe_allow_html=True)
 
@@ -53,7 +48,7 @@ with st.sidebar:
        - Tamaño máximo recomendado: 5MB
     
     2. **Captura con Cámara** 📷
-       - Usa tu cámara web para capturar imágenes
+       - Usa tu cámara para capturar imágenes
        - Asegúrate de tener buena iluminación
     
     3. **Análisis con IA** 🤖
@@ -82,28 +77,24 @@ st.title("🤖 Análisis Inteligente de Imágenes")
 # Tabs para diferentes métodos de entrada
 tab1, tab2 = st.tabs(["📤 Subir Imagen", "📷 Usar Cámara"])
 
+# Variable para almacenar la imagen
+image_file = None
+
 with tab1:
     uploaded_file = st.file_uploader(
         "Arrastra o selecciona una imagen",
         type=["jpg", "png", "jpeg"],
         help="Formatos soportados: JPG, PNG, JPEG"
     )
-    
     if uploaded_file:
+        image_file = uploaded_file
         st.image(uploaded_file, caption="Imagen cargada", use_column_width=True)
 
 with tab2:
-    webrtc_ctx = webrtc_streamer(
-        key="camera",
-        video_processor_factory=None,
-        media_stream_constraints={"video": True, "audio": False},
-    )
-    if webrtc_ctx.video_transformer:
-        if st.button("📸 Capturar Imagen"):
-            frame = webrtc_ctx.video_transformer.frame
-            if frame is not None:
-                uploaded_file = cv2_to_bytes(frame)
-                st.image(frame, caption="Imagen capturada", use_column_width=True)
+    camera_image = st.camera_input("Toma una foto")
+    if camera_image:
+        image_file = camera_image
+        st.image(camera_image, caption="Imagen capturada", use_column_width=True)
 
 # Opciones adicionales
 col1, col2 = st.columns(2)
@@ -125,10 +116,10 @@ analyze_button = st.button(
 )
 
 # Lógica de análisis
-if uploaded_file is not None and api_key and analyze_button:
+if image_file is not None and api_key and analyze_button:
     with st.spinner("🤖 Analizando imagen..."):
         try:
-            base64_image = encode_image(uploaded_file)
+            base64_image = encode_image(image_file)
             prompt_text = "Describe detalladamente lo que ves en la imagen en español. Incluye todos los elementos relevantes y su contexto."
             
             if show_details and additional_details:
@@ -164,7 +155,7 @@ if uploaded_file is not None and api_key and analyze_button:
         except Exception as e:
             st.error(f"❌ Error: {str(e)}")
 else:
-    if not uploaded_file and analyze_button:
+    if not image_file and analyze_button:
         st.warning("⚠️ Por favor, sube o captura una imagen primero.")
     if not api_key and analyze_button:
         st.warning("⚠️ Por favor, ingresa tu API key de OpenAI en la barra lateral.")
