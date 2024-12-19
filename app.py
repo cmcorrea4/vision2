@@ -2,10 +2,8 @@ import os
 import streamlit as st
 import base64
 from openai import OpenAI
-import openai
 from PIL import Image
 
-# Función para codificar la imagen a base64
 def encode_image(image_file):
     return base64.b64encode(image_file.getvalue()).decode("utf-8")
 
@@ -65,11 +63,9 @@ with st.sidebar:
     
     # Input para la API key con diseño mejorado
     with st.expander("⚙️ Configuración API", expanded=False):
-        ke = st.text_input('API Key de OpenAI', type="password")
-
-# Configuración de la API
-os.environ['OPENAI_API_KEY'] = ke if ke else ''
-api_key = os.environ.get('OPENAI_API_KEY', '')
+        api_key = st.text_input('API Key de OpenAI', type="password")
+        if api_key:
+            os.environ['OPENAI_API_KEY'] = api_key
 
 # Contenedor principal
 st.title("🤖 Análisis Inteligente de Imágenes")
@@ -120,17 +116,20 @@ if image_file is not None and api_key and analyze_button:
     with st.spinner("🤖 Analizando imagen..."):
         try:
             base64_image = encode_image(image_file)
-            prompt_text = "Describe detalladamente lo que ves en la imagen en español. Incluye todos los elementos relevantes y su contexto."
             
+            # Preparar el mensaje con el contexto si está disponible
+            prompt_text = "Describe detalladamente lo que ves en la imagen en español. Incluye todos los elementos relevantes y su contexto."
             if show_details and additional_details:
                 prompt_text += f"\n\nContexto adicional:\n{additional_details}"
 
-            client = OpenAI(api_key=api_key)
+            client = OpenAI()
             
             with st.status("Procesando...", expanded=True) as status:
                 st.write("☁️ Conectando con OpenAI...")
+                
+                # Formato correcto para la API de Vision
                 response = client.chat.completions.create(
-                    model="gpt-4o-mini",  #  gpt-4-vision-preview
+                    model="gpt-4-vision-preview",
                     messages=[
                         {
                             "role": "user",
@@ -138,15 +137,19 @@ if image_file is not None and api_key and analyze_button:
                                 {"type": "text", "text": prompt_text},
                                 {
                                     "type": "image_url",
-                                    "image_url": f"data:image/jpeg;base64,{base64_image}",
-                                },
-                            ],
+                                    "image_url": {
+                                        "url": f"data:image/jpeg;base64,{base64_image}",
+                                        "detail": "high"
+                                    }
+                                }
+                            ]
                         }
                     ],
-                    max_tokens=500,
+                    max_tokens=500
                 )
-                status.update(label="✅ ¡Análisis completado!", state="complete")
                 
+                status.update(label="✅ ¡Análisis completado!", state="complete")
+            
             # Mostrar resultados
             st.success("Análisis completado con éxito")
             st.markdown("### 📝 Resultados del Análisis")
@@ -154,6 +157,8 @@ if image_file is not None and api_key and analyze_button:
             
         except Exception as e:
             st.error(f"❌ Error: {str(e)}")
+            if "API key" in str(e):
+                st.warning("⚠️ Verifica que tu API key sea válida")
 else:
     if not image_file and analyze_button:
         st.warning("⚠️ Por favor, sube o captura una imagen primero.")
