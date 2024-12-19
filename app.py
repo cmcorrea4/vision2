@@ -129,7 +129,7 @@ if image_file is not None and api_key and analyze_button:
                 
                 # Formato correcto para la API de Vision
                 response = client.chat.completions.create(
-                    model="gpt-4-vision-preview",
+                    model="gpt-4o-mini",
                     messages=[
                         {
                             "role": "user",
