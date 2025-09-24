@@ -96,7 +96,7 @@ if uploaded_file is not None and api_key and analyze_button:
             full_response = ""
             message_placeholder = st.empty()
             response = openai.chat.completions.create(
-              model= "gpt-4o-mini",
+              model= "gpt-4o",
               messages=[
                 {
                    "role": "user",
